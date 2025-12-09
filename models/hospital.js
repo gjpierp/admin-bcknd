@@ -1,31 +1,26 @@
-const e = require("express");
-const { Schema, model } = require("mongoose");
+const { Schema, model } = require('mongoose');
 
-const HospitalSchema = Schema(
-  {
+const HospitalSchema = Schema({
     nombre: {
-      type: String,
-      required: [true, "El nombre es obligatorio"],
+        type: String,
+        required: true
     },
     img: {
-      type: String,
-    },
-    estado: {
-      type: Boolean,
-      default: true,
+        type: String,
     },
     usuario: {
-      type: Schema.Types.ObjectId,
-      ref: "Usuario",
-      required: true,
-    },
-  },
-  { collection: "hospitales" }
-);
+        required: true,
+        type: Schema.Types.ObjectId,
+        ref: 'Usuario'
+    }
+}, {  collection: 'hospitales' });
 
-HospitalSchema.method("toJSON", function () {
-  const { __v, ...object } = this.toObject();
-  return object;
-});
 
-module.exports = model("Hospital", HospitalSchema);
+HospitalSchema.method('toJSON', function() {
+    const { __v, ...object } = this.toObject();
+    return object;
+})
+
+
+
+module.exports = model( 'Hospital', HospitalSchema );

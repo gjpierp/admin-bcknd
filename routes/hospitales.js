@@ -1,10 +1,11 @@
-/**
- * Rutas: /api/hospitales
- */
+/*
+    Hospitales
+    ruta: '/api/hospitales'
+*/
 const { Router } = require("express");
 const { check } = require("express-validator");
-
 const { validarCampos } = require("../middlewares/validar-campos");
+
 const { validarJWT } = require("../middlewares/validar-jwt");
 
 const {
@@ -28,7 +29,15 @@ router.post(
   crearHospital
 );
 
-router.put("/:id", [], actualizarHospital);
+router.put(
+  "/:id",
+  [
+    validarJWT,
+    check("nombre", "El nombre es obligatorio").not().isEmpty(),
+    validarCampos,
+  ],
+  actualizarHospital
+);
 
 router.delete("/:id", validarJWT, borrarHospital);
 
