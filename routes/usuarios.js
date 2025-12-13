@@ -21,7 +21,7 @@ router.post( '/',
         check('email', 'El email es obligatorio').isEmail(),
         validarCampos,
     ], 
-    crearUsuario 
+    crearUsuario,
 );
 
 router.put( '/:id',
@@ -32,7 +32,7 @@ router.put( '/:id',
         check('role', 'El role es obligatorio').not().isEmpty(),
         validarCampos,
     ],
-    actualizarUsuario
+    actualizarUsuario,
 );
 
 router.delete( '/:id',

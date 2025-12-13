@@ -3,14 +3,39 @@ const { response } = require("express");
 const Medico = require("../models/medico");
 
 const getMedicos = async (req, res = response) => {
-  const medicos = await Medico.find()
-    .populate("usuario", "nombre img")
-    .populate("hospital", "nombre img");
-
+  const desde = Number(req.query.desde) || 0;
+  const [medicos, total] = await Promise.all([
+    Medico.find({}, "usuario hospital nombre img")
+      .populate("usuario", "nombre img")
+      .populate("hospital", "nombre img")
+      .skip(desde)
+      .limit(5),
+    Medico.countDocuments(),
+  ]);
   res.json({
     ok: true,
     medicos,
+    total,
   });
+};
+
+const getMedicoById = async (req, res = response) => {
+  const id = req.params.id;
+  try {
+    const medico = await Medico.findById(id)
+      .populate("usuario", "nombre img")
+      .populate("hospital", "nombre img");
+    res.json({
+      ok: true,
+      medico,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({
+      ok: true,
+      msg: "Hable con el administrador",
+    });
+  }
 };
 
 const crearMedico = async (req, res = response) => {
@@ -19,7 +44,6 @@ const crearMedico = async (req, res = response) => {
     usuario: uid,
     ...req.body,
   });
-
   try {
     const medicoDB = await medico.save();
 
@@ -37,29 +61,27 @@ const crearMedico = async (req, res = response) => {
 };
 
 const actualizarMedico = async (req, res = response) => {
-  const uid = req.uid;
   const id = req.params.id;
+  const uid = req.uid;
   const hospitalId = req.params.hospitalId;
+  console.log(hospitalId);
   try {
-    const medico = Medico.findById(id);
+    const medico = await Medico.findById(id);
     if (!medico) {
       return res.status(404).json({
-        ok: false,
-        msg: "Hospital no encontrado por id",
+        ok: true,
+        msg: "Medico no encontrado por id",
       });
     }
     const cambiosMedico = { ...req.body, hospital: hospitalId, usuario: uid };
-
     const medicoActualizado = await Medico.findByIdAndUpdate(
       id,
       cambiosMedico,
-      {
-        new: true,
-      }
+      { new: true }
     );
     res.json({
       ok: true,
-      medicoActualizado,
+      medico: medicoActualizado,
     });
   } catch (error) {
     res.status(500).json({
@@ -71,14 +93,12 @@ const actualizarMedico = async (req, res = response) => {
 
 const borrarMedico = async (req, res = response) => {
   const id = req.params.id;
-  console.log(id);
   try {
     const medico = await Medico.findById(id);
-    console.log(medico.nombre);
     if (!medico) {
       return res.status(404).json({
-        ok: false,
-        msg: "Médico no encontrado por id",
+        ok: true,
+        msg: "Medico no encontrado por id",
       });
     }
     const medicoBorrado = await Medico.findByIdAndDelete(id);
@@ -99,4 +119,5 @@ module.exports = {
   crearMedico,
   actualizarMedico,
   borrarMedico,
+  getMedicoById,
 };
