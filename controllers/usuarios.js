@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 
 const Usuario = require("../models/usuario");
 const { generarJWT } = require("../helpers/jwt");
+const { getMenuFrontendUsuario } = require("../helpers/menu-frontend");
 const {
   obtenerMensaje: obtenerMensajeTraduccido,
 } = require("../helpers/traducciones");
@@ -80,6 +81,11 @@ const crearUsuario = async (req, res = response) => {
     // Generar el TOKEN - JWT
     const token = await generarJWT(resultado.insertId, correo_electronico);
 
+    // Cargar menú y seguridad desde BDD
+    const menu = await getMenuFrontendUsuario(resultado.insertId);
+    const roles = await Usuario.obtenerRoles(resultado.insertId);
+    const permisos = await Usuario.obtenerPermisos(resultado.insertId);
+
     const msgSuccess = await obtenerMensajeTraduccido("USER_CREATED", idioma);
 
     res.json({
@@ -90,6 +96,9 @@ const crearUsuario = async (req, res = response) => {
         contrasena: undefined,
       },
       token,
+      menu,
+      roles,
+      permisos,
       msg: msgSuccess || "Usuario creado exitosamente",
     });
   } catch (error) {

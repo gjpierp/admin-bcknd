@@ -78,12 +78,12 @@ const fileUpload = async (req, res = response) => {
   const tipo = req.params.tipo;
   const id = req.params.id;
   // Validar tipo
-  const tiposValidos = ["hospitales", "medicos", "usuarios"];
+  const tiposValidos = ["usuarios"];
   if (!tiposValidos.includes(tipo)) {
     const msg = await obtenerMensajeTraduccido("UPLOAD_INVALID_TYPE", idioma);
     return res.status(400).json({
       ok: false,
-      msg: msg || "No es un médico, usuario u hospital (tipo)",
+      msg: msg || "Tipo inválido. Solo 'usuarios' permitido",
     });
   }
   // Validar que exista un archivo

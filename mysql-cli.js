@@ -53,15 +53,61 @@ async function ejecutarQuery(query) {
 
 async function ejecutarArchivoSQL(filePath) {
   try {
-    const sql = await fs.readFile(filePath, "utf-8");
+    let sql = await fs.readFile(filePath, "utf-8");
     console.log(
       `${colors.cyan}📄 Ejecutando: ${path.basename(filePath)}${colors.reset}`
     );
 
-    const statements = sql
-      .split(";")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith("--"));
+    // Preprocesar para compatibilidad con MySQL desde Node
+    // - Remover comandos DELIMITER del cliente
+    // - Normalizar columnas de mensajes (clave_mensaje->clave, valor/texto_mensaje->texto)
+    // - Quitar 'USE ...' (opcional)
+    sql = sql
+      .replace(/\bDELIMITER\b\s*\S+/gi, "")
+      .replace(/\bUSE\b\s+\S+\s*;?/gi, "")
+      .replace(/clave_mensaje\b/g, "clave")
+      .replace(/texto_mensaje\b/g, "texto")
+      .replace(
+        /\(id_mensaje,\s*id_idioma,\s*valor\)/g,
+        "(id_mensaje, id_idioma, texto)"
+      )
+      .replace(/WHERE\s+clave_mensaje\s*=\s*/g, "WHERE clave = ")
+      .replace(/END\s*\/\//g, "END;");
+
+    // Construir sentencias agrupando rutinas (CREATE PROCEDURE/FUNCTION ... END;)
+    const lines = sql.split(/\r?\n/);
+    const statements = [];
+    let buffer = "";
+    let inRoutine = false;
+
+    const startsRoutine = (line) =>
+      /\bCREATE\s+(PROCEDURE|FUNCTION)\b/i.test(line);
+    const endsRoutine = (line) => /\bEND\s*;\s*$/i.test(line);
+
+    for (let raw of lines) {
+      const line = raw.trim();
+      if (!line || line.startsWith("--")) continue;
+      // Acumular líneas de rutina
+      if (!inRoutine && startsRoutine(line)) {
+        inRoutine = true;
+      }
+      buffer += raw + "\n";
+      if (inRoutine) {
+        if (endsRoutine(line)) {
+          statements.push(buffer.trim());
+          buffer = "";
+          inRoutine = false;
+        }
+        continue;
+      }
+      // Sentencias normales terminan con ;
+      if (/;\s*$/.test(line)) {
+        const stmt = buffer.trim();
+        buffer = "";
+        if (stmt) statements.push(stmt);
+      }
+    }
+    if (buffer.trim()) statements.push(buffer.trim());
 
     let ejecutadas = 0;
     let errores = 0;

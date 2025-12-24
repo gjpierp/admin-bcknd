@@ -337,8 +337,24 @@ const obtenerMensaje = async (clave, idioma = "es") => {
 
     return rows[0]?.mensaje || clave;
   } catch (error) {
-    console.error("Error obteniendo mensaje:", error);
-    return clave;
+    // Fallback cuando la función SQL no existe o falla
+    try {
+      const [fallback] = await pool.query(
+        `SELECT tmv.texto AS mensaje
+         FROM traducciones_mensajes tm
+         INNER JOIN traducciones_mensajes_valores tmv ON tm.id_mensaje = tmv.id_mensaje
+         WHERE tm.clave = ?
+           AND tmv.id_idioma = (
+             SELECT id_idioma FROM idiomas WHERE codigo_iso = ? AND activo = TRUE LIMIT 1
+           )
+         LIMIT 1`,
+        [clave, idioma]
+      );
+      return fallback[0]?.mensaje || clave;
+    } catch (innerErr) {
+      console.error("Error obteniendo mensaje (fallback):", innerErr);
+      return clave;
+    }
   }
 };
 

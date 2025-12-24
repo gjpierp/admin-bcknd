@@ -14,18 +14,25 @@ const { validarJWT } = require("../middlewares/validar-jwt");
 
 const router = Router();
 
-router.post(
-  "/",
-  [
-    check(
-      "correo_electronico",
-      "El correo electrónico es obligatorio"
-    ).isEmail(),
-    check("contrasena", "La contraseña es obligatoria").not().isEmpty(),
-    validarCampos,
-  ],
-  login
-);
+router.post("/", login, [
+  check("correo_electronico")
+    .not()
+    .isEmpty()
+    .withMessage("El correo electrónico es obligatorio")
+    .bail()
+    .isEmail()
+    .withMessage("El correo electrónico debe ser válido"),
+  check("contrasena")
+    .not()
+    .isEmpty()
+    .withMessage("La contraseña es obligatoria")
+    .bail()
+    .isString()
+    .withMessage("La contraseña debe ser texto")
+    .isLength({ min: 6 })
+    .withMessage("La contraseña debe tener al menos 6 caracteres"),
+  validarCampos,
+]);
 
 router.post(
   "/google",

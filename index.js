@@ -24,8 +24,20 @@ app.use(cors());
 // Protección contra payloads muy grandes
 app.use(validarTamanoBody(2048)); // 2MB máximo
 
-// Lectura y parseo del body
-app.use(express.json());
+// Lectura y parseo del body con captura de raw para depuración
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      try {
+        req.rawBody = buf ? buf.toString() : undefined;
+      } catch (_) {
+        req.rawBody = undefined;
+      }
+    },
+  })
+);
+// Soporte para application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true }));
 
 // Sanitizar inputs
 app.use(sanitizarInputs);
@@ -49,10 +61,21 @@ app.use("/api/login", require("./routes/auth"));
 app.use("/api/upload", require("./routes/uploads"));
 app.use("/api/territorios", require("./routes/territorios"));
 app.use("/api/traducciones", require("./routes/traducciones"));
+app.use("/api/tenants", require("./routes/tenants"));
+app.use("/api/entornos", require("./routes/entornos"));
+app.use("/api/aplicaciones", require("./routes/aplicaciones"));
+app.use("/api/sitios", require("./routes/sitios"));
+app.use("/api/dominios", require("./routes/dominios"));
+app.use("/api/paginas", require("./routes/paginas"));
+app.use("/api/rutas", require("./routes/rutas"));
+
+// Gestor de contraseñas (sin prefijo gc)
+app.use("/api/bovedas", require("./routes/bovedas"));
+app.use("/api/credenciales", require("./routes/credenciales"));
 
 // Ruta catch-all para SPA
 app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "/public/index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Manejador de rutas no encontradas (debe ir después de todas las rutas)

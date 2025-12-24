@@ -5,14 +5,21 @@ const Usuario = require("../models/usuario");
 const { generarJWT } = require("../helpers/jwt");
 const { googleVerify } = require("../helpers/google-verify");
 const { facebookVerify } = require("../helpers/facebook-verify");
-const { getMenuFrontend } = require("../helpers/menu-frontend");
+const { getMenuFrontendUsuario } = require("../helpers/menu-frontend");
 const {
   obtenerMensaje: obtenerMensajeTraduccido,
 } = require("../helpers/traducciones");
 
 const login = async (req, res = response) => {
   const { correo_electronico, contrasena } = req.body;
+  console.log(correo_electronico, contrasena);
   const idioma = req.idioma?.codigo || "es";
+  console.log("Login recibido", {
+    correo_electronico,
+    ip: req.ip,
+    contentType: req.headers["content-type"],
+    rawBody: req.rawBody,
+  });
 
   try {
     const usuarioDB = await Usuario.obtenerPorCorreo(correo_electronico);
@@ -50,10 +57,15 @@ const login = async (req, res = response) => {
       idioma
     );
 
+    const menu = await getMenuFrontendUsuario(usuarioDB.id_usuario);
+    const roles = await Usuario.obtenerRoles(usuarioDB.id_usuario);
+    const permisos = await Usuario.obtenerPermisos(usuarioDB.id_usuario);
     res.json({
       ok: true,
       token,
-      menu: getMenuFrontend(usuarioDB.role),
+      menu,
+      roles,
+      permisos,
       msg: msgSuccess || "Inicio de sesión exitoso",
     });
   } catch (error) {
@@ -153,11 +165,16 @@ const googleSignIn = async (req, res = response) => {
       idioma
     );
 
+    const menu = await getMenuFrontendUsuario(usuarioId);
+    const roles = await Usuario.obtenerRoles(usuarioId);
+    const permisos = await Usuario.obtenerPermisos(usuarioId);
     res.json({
       ok: true,
       token,
       usuario: usuarioData,
-      menu: getMenuFrontend(usuarioData.role || "USER_ROLE"),
+      menu,
+      roles,
+      permisos,
       msg: msgSuccess || "Inicio de sesión con Google exitoso",
     });
   } catch (error) {
@@ -262,11 +279,16 @@ const facebookSignIn = async (req, res = response) => {
       idioma
     );
 
+    const menu = await getMenuFrontendUsuario(usuarioId);
+    const roles = await Usuario.obtenerRoles(usuarioId);
+    const permisos = await Usuario.obtenerPermisos(usuarioId);
     res.json({
       ok: true,
       token,
       usuario: usuarioData,
-      menu: getMenuFrontend(usuarioData.role || "USER_ROLE"),
+      menu,
+      roles,
+      permisos,
       msg: msgSuccess || "Inicio de sesión con Facebook exitoso",
     });
   } catch (error) {
@@ -313,11 +335,16 @@ const renewToken = async (req, res = response) => {
       idioma
     );
 
+    const menu = await getMenuFrontendUsuario(uid);
+    const roles = await Usuario.obtenerRoles(uid);
+    const permisos = await Usuario.obtenerPermisos(uid);
     res.json({
       ok: true,
       token,
       usuario,
-      menu: getMenuFrontend(usuario.role || "USER_ROLE"),
+      menu,
+      roles,
+      permisos,
       msg: msgSuccess || "Token renovado exitosamente",
     });
   } catch (error) {
